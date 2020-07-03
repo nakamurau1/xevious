@@ -102,7 +102,7 @@ class Canvas2DUtility {
   }
 
   // 画像をロードしてコールバック関数にロードした画像を与え呼び出す
-  imageLoader(path, cllback) {
+  imageLoader(path, callback) {
     let target = new Image();
     target.addEventListener('load', () => {
       if(callback != null) {
