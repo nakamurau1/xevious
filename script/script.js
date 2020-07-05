@@ -4,9 +4,8 @@
 
   let startTime = null;
 
-  // 自機の座標
-  let viperX = CANVAS_WIDTH / 2;
-  let viperY = CANVAS_HEIGHT / 2;
+  // 自機のインスタンス
+  let viper = null;
 
   // 自機が登場中かどうかを表すフラグ
   let isComing = false;
@@ -33,9 +32,13 @@
     canvas.height = CANVAS_HEIGHT;
 
     // 登場シーンからスタートするための設定
-    isComing = true;
-    comingStart = Date.now();
-    viperY = CANVAS_HEIGHT;
+    viper = new Viper(ctx, 0, 0, image);
+    viper.setComing(
+      CANVAS_WIDTH / 2,
+      CANVAS_HEIGHT,
+      CANVAS_WIDTH / 2,
+      CANVAS_HEIGHT - 100
+    );
   }
 
   // 描画処理を行なう
@@ -46,20 +49,9 @@
 
     let nowTime = (Date.now() - startTime) / 1000;
 
-    if(isComing === true) {
-      let justTime = Date.now();
-      let comingTime = (justTime - comingStart) / 1000;
-      viperY = CANVAS_HEIGHT - comingTime * 50;
-      if(viperY <= CANVAS_HEIGHT -100) {
-        isComing = false;
-        viperY = CANVAS_HEIGHT - 100;
-      }
-      if(justTime % 100 < 50) {
-        ctx.globalAlpha = 0.5;
-      }
-    }
+    viper.update();
 
-    ctx.drawImage(image, viperX, viperY);
+    // 恒常ループのために描画処理を再帰呼び出しする
     requestAnimationFrame(render);
   }
 
@@ -70,16 +62,16 @@
       if(isComing === true) {return;}
       switch(event.key) {
         case 'ArrowLeft':
-          viperX -= 10;
+          viper.position.x -= 10;
           break;
         case 'ArrowRight':
-          viperX += 10;
+          viper.position.x += 10;
           break;
         case 'ArrowUp':
-          viperY -= 10;
+          viper.position.y -= 10;
           break;
         case 'ArrowDown':
-          viperY += 10;
+          viper.position.y += 10;
           break;
       }
     }, false);
