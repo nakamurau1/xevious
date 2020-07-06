@@ -32,7 +32,7 @@
     canvas.height = CANVAS_HEIGHT;
 
     // 登場シーンからスタートするための設定
-    viper = new Viper(ctx, 0, 0, image);
+    viper = new Viper(ctx, 0, 0, 64, 64, image);
     viper.setComing(
       CANVAS_WIDTH / 2,
       CANVAS_HEIGHT,
