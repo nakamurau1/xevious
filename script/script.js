@@ -12,6 +12,9 @@
   // 登場演出を開始した際のタイムスタンプ
   let comingStart = null;
 
+  // キーの押下状態を調べるオブジェクト
+  window.isKeyDown = {};
+
   window.addEventListener('load', () => {
     util = new Canvas2DUtility(document.body.querySelector('#main_canvas'));
     canvas = util.canvas;
@@ -57,23 +60,14 @@
 
   // イベントを設定する
   function eventSetting() {
+    // キーの押下時に呼び出されるイベントリスナーを設定する
     window.addEventListener('keydown', (event) => {
-      // 登場シーンなら何もしないで終了
-      if(isComing === true) {return;}
-      switch(event.key) {
-        case 'ArrowLeft':
-          viper.position.x -= 10;
-          break;
-        case 'ArrowRight':
-          viper.position.x += 10;
-          break;
-        case 'ArrowUp':
-          viper.position.y -= 10;
-          break;
-        case 'ArrowDown':
-          viper.position.y += 10;
-          break;
-      }
+      // キーの押下状態を管理するオブジェクトに押下されたことを設定する
+      isKeyDown[`key_${event.key}`] = true;
     }, false);
+    // キーが離された時に呼び出されるイベントリスナーを設定する
+    window.addEventListener('keyup', (event) => {
+      isKeyDown[`key_${event.key}`] = false;
+    });
   }
 })();
