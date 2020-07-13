@@ -1,6 +1,7 @@
 (() => {
   const CANVAS_WIDTH = 640;
   const CANVAS_HEIGHT = 480;
+  const SHOT_MAX_COUNT = 10;
 
   let startTime = null;
 
@@ -11,6 +12,8 @@
   let isComing = false;
   // 登場演出を開始した際のタイムスタンプ
   let comingStart = null;
+  // ショットのインスタンスを格納する配列
+  let shotArray = [];
 
   // キーの押下状態を調べるオブジェクト
   window.isKeyDown = {};
@@ -20,13 +23,8 @@
     canvas = util.canvas;
     ctx = util.context;
 
-    util.imageLoader('./image/viper.png', (loadedImage) => {
-      image = loadedImage;
-      initialize();
-      eventSetting();
-      startTime = Date.now();
-      render();
-    });
+    initialize();
+    loadCheck();
   }, false);
 
   // canvas やコンテキストを初期化する
@@ -35,13 +33,19 @@
     canvas.height = CANVAS_HEIGHT;
 
     // 登場シーンからスタートするための設定
-    viper = new Viper(ctx, 0, 0, 64, 64, image);
+    viper = new Viper(ctx, 0, 0, 64, 64, './image/viper.png');
     viper.setComing(
       CANVAS_WIDTH / 2,
       CANVAS_HEIGHT,
       CANVAS_WIDTH / 2,
       CANVAS_HEIGHT - 100
     );
+
+    // ショットを初期化する
+    for(let i = 0; i < SHOT_MAX_COUNT; i++) {
+      shotArray[i] = new Shot(ctx, 0, 0, 32, 32, './image/viper_shot.png');
+    }
+    viper.setShotArray(shotArray);
   }
 
   // 描画処理を行なう
@@ -54,8 +58,29 @@
 
     viper.update();
 
+    shotArray.map((v) => {
+      v.update();
+    });
+
     // 恒常ループのために描画処理を再帰呼び出しする
     requestAnimationFrame(render);
+  }
+
+  // インスタンスの準備が完了しているか確認する
+  function loadCheck() {
+    let ready = true;
+    ready = ready && viper.ready;
+    shotArray.map((v) => {
+      ready = ready && v.ready;
+    });
+
+    if(ready === true) {
+      eventSetting();
+      startTime = Date.now()
+      render();
+    } else {
+      setTimeout(loadCheck, 100);
+    }
   }
 
   // イベントを設定する
