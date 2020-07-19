@@ -51,6 +51,7 @@ class Viper extends Character {
     this.shotCheckCounter = 0;
     // ショットを撃つことができる間隔（フレーム数）
     this.shotInterval = 10;
+    this.singleShotArray = null;
   }
 
   setComing(startX, startY, endX, endY) {
@@ -61,8 +62,9 @@ class Viper extends Character {
     this.comingEndPosition = new Position(endX, endY);
   }
 
-  setShotArray(shotArray) {
+  setShotArray(shotArray, singleShotArray) {
     this.shotArray = shotArray;
+    this.singleShotArray = singleShotArray;
   }
 
   update() {
@@ -107,6 +109,17 @@ class Viper extends Character {
               this.shotArray[i].set(this.position.x, this.position.y);
               this.shotCheckCounter = -this.shotInterval;
               // 1つ生成したらループを抜ける
+              break;
+            }
+          }
+
+          for(let i = 0; i < this.singleShotArray.length; i+= 2) {
+            if(this.singleShotArray[i].life <= 0 && this.singleShotArray[i+1].life <= 0) {
+              this.singleShotArray[i].set(this.position.x, this.position.y);
+              this.singleShotArray[i].setVector(0.2, -0.9);
+              this.singleShotArray[i + 1].set(this.position.x, this.position.y);
+              this.singleShotArray[i + 1].setVector(-0.2, -0.9);
+              this.shotCheckCounter = -this.shotInterval;
               break;
             }
           }

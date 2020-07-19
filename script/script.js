@@ -14,6 +14,8 @@
   let comingStart = null;
   // ショットのインスタンスを格納する配列
   let shotArray = [];
+  // シングルショットのインスタンスを格納する配列
+  let singleShotArray = [];
 
   // キーの押下状態を調べるオブジェクト
   window.isKeyDown = {};
@@ -44,8 +46,10 @@
     // ショットを初期化する
     for(let i = 0; i < SHOT_MAX_COUNT; i++) {
       shotArray[i] = new Shot(ctx, 0, 0, 32, 32, './image/viper_shot.png');
+      singleShotArray[i * 2] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png');
+      singleShotArray[i * 2 + 1] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png');
     }
-    viper.setShotArray(shotArray);
+    viper.setShotArray(shotArray, singleShotArray);
   }
 
   // 描画処理を行なう
@@ -62,6 +66,10 @@
       v.update();
     });
 
+    singleShotArray.map((v) => {
+      v.update();
+    });
+
     // 恒常ループのために描画処理を再帰呼び出しする
     requestAnimationFrame(render);
   }
@@ -71,6 +79,9 @@
     let ready = true;
     ready = ready && viper.ready;
     shotArray.map((v) => {
+      ready = ready && v.ready;
+    });
+    singleShotArray.map((v) => {
       ready = ready && v.ready;
     });
 
