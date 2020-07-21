@@ -22,6 +22,14 @@ class Character {
       this.ready = true;
     }, false);
     this.image.src = imagePath;
+    this.angle = 270 * Math.PI / 180;
+  }
+
+  setVectorFromAngle(angle) {
+    this.angle = angle;
+    let sin = Math.sin(angle);
+    let cos = Math.cos(angle);
+    this.vector.set(cos, sin);
   }
 
   draw() {
@@ -34,6 +42,30 @@ class Character {
       this.width,
       this.height
     );
+  }
+
+  rotationDraw() {
+    // 座標系を回転する前の状態を保存する
+    this.ctx.save();
+    // 自身の位置が座標系の中心と重なるように平行移動する
+    this.ctx.translate(this.position.x, this.position.y);
+    // 座標系を回転させる（270度の位置を基準にするためにMath.PI * 1.5を引いている）
+    this.ctx.rotate(this.angle - Math.PI * 1.5);
+
+    // キャラクターの幅を考慮してオフセットする量
+    let offsetX = this.width / 2;
+    let offsetY = this.heigh / 2;
+    // キャラクターの幅やオフセットする様をかみして描画する
+    this.ctx.drawImage(
+      this.image,
+      -offsetX,
+      -offsetY,
+      this.width,
+      this.height
+    );
+
+    // 座標系を回転する前の状態に戻す
+    this.ctx.restore();
   }
 }
 
@@ -115,10 +147,13 @@ class Viper extends Character {
 
           for(let i = 0; i < this.singleShotArray.length; i+= 2) {
             if(this.singleShotArray[i].life <= 0 && this.singleShotArray[i+1].life <= 0) {
+              // 真上方向から左右10度に傾いたラジアン
+              let radCW = 280 * Math.PI / 180;
+              let radCCW = 260 * Math.PI / 180;
               this.singleShotArray[i].set(this.position.x, this.position.y);
-              this.singleShotArray[i].setVector(0.2, -0.9);
+              this.singleShotArray[i].setVectorFromAngle(radCW);
               this.singleShotArray[i + 1].set(this.position.x, this.position.y);
-              this.singleShotArray[i + 1].setVector(-0.2, -0.9);
+              this.singleShotArray[i + 1].setVectorFromAngle(radCCW);
               this.shotCheckCounter = -this.shotInterval;
               break;
             }
@@ -145,10 +180,6 @@ class Shot extends Character {
   set(x, y) {
     this.position.set(x, y);
     this.life = 1;
-  }
-
-  setVector(x, y) {
-    this.vector.set(x, y);
   }
 
   update() {
