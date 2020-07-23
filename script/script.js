@@ -2,6 +2,8 @@
   const CANVAS_WIDTH = 640;
   const CANVAS_HEIGHT = 480;
   const SHOT_MAX_COUNT = 10;
+  // 敵キャラクターのインスタンス数
+  const ENEMY_MAX_COUNT = 10;
 
   let startTime = null;
 
@@ -16,6 +18,8 @@
   let shotArray = [];
   // シングルショットのインスタンスを格納する配列
   let singleShotArray = [];
+  // 敵キャラクターのインスタンスを格納する配列
+  let enemyArray = [];
 
   // キーの押下状態を調べるオブジェクト
   window.isKeyDown = {};
@@ -31,6 +35,8 @@
 
   // canvas やコンテキストを初期化する
   function initialize() {
+    let i;
+    // canvasの大きさを設定
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
 
@@ -50,6 +56,11 @@
       singleShotArray[i * 2 + 1] = new Shot(ctx, 0, 0, 32, 32, './image/viper_single_shot.png');
     }
     viper.setShotArray(shotArray, singleShotArray);
+
+    // 敵キャラクターを初期化する
+    for(let i = 0; i < ENEMY_MAX_COUNT; i++) {
+      enemyArray[i] = new Enemy(ctx, 0, 0, 48, 48, './image/enemy_small.png');
+    }
   }
 
   // 描画処理を行なう
@@ -70,6 +81,10 @@
       v.update();
     });
 
+    enemyArray.map((v) => {
+      v.update();
+    });
+
     // 恒常ループのために描画処理を再帰呼び出しする
     requestAnimationFrame(render);
   }
@@ -82,6 +97,10 @@
       ready = ready && v.ready;
     });
     singleShotArray.map((v) => {
+      ready = ready && v.ready;
+    });
+    // 敵キャラクターの準備状況も確認する
+    enemyArray.map((v) => {
       ready = ready && v.ready;
     });
 
