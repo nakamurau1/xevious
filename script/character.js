@@ -13,6 +13,7 @@ class Character {
   constructor(ctx, x, y, w, h, life, imagePath) {
     this.ctx = ctx;
     this.position = new Position(x, y);
+    this.vector = new Position(0.0, -1.0);
     this.width = w;
     this.height = h;
     this.life = life;
@@ -23,6 +24,11 @@ class Character {
     }, false);
     this.image.src = imagePath;
     this.angle = 270 * Math.PI / 180;
+  }
+
+  setVector(x, y){
+    // 自身の vector プロパティに設定する
+    this.vector.set(x, y);
   }
 
   setVectorFromAngle(angle) {

@@ -20,6 +20,8 @@
   let singleShotArray = [];
   // 敵キャラクターのインスタンスを格納する配列
   let enemyArray = [];
+  // シーンマネージャー
+  let scene = null;
 
   // キーの押下状態を調べるオブジェクト
   window.isKeyDown = {};
@@ -61,6 +63,9 @@
     for(let i = 0; i < ENEMY_MAX_COUNT; i++) {
       enemyArray[i] = new Enemy(ctx, 0, 0, 48, 48, './image/enemy_small.png');
     }
+
+    // シーンを初期化する
+    scene = new SceneManager();
   }
 
   // 描画処理を行なう
@@ -72,6 +77,7 @@
     let nowTime = (Date.now() - startTime) / 1000;
 
     viper.update();
+    scene.update();
 
     shotArray.map((v) => {
       v.update();
@@ -106,6 +112,7 @@
 
     if(ready === true) {
       eventSetting();
+      sceneSetting();
       startTime = Date.now()
       render();
     } else {
@@ -124,5 +131,29 @@
     window.addEventListener('keyup', (event) => {
       isKeyDown[`key_${event.key}`] = false;
     });
+  }
+
+  // シーンを設定する
+  function sceneSetting() {
+    // イントロシーン
+    scene.add('intro', (time) => {
+      if(time > 2.0) {
+        scene.use('invade');
+      }
+    });
+    // invadeシーン
+    scene.add('invade', (time) => {
+      if(scene.frame !== 0) {return;}
+      for(let i = 0; i < ENEMY_MAX_COUNT; ++i) {
+        if(enemyArray[i].life <= 0) {
+          let e = enemyArray[i];
+          e.set(CANVAS_WIDTH / 2, -e.height);
+          e.setVector(0.0, 1.0);
+          break;
+        }
+      }
+    });
+    // 最初のシーンにはイントロを設定する
+    scene.use('intro');
   }
 })();
