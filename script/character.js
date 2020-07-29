@@ -197,28 +197,70 @@ class Shot extends Character {
     this.position.y += this.vector.y * this.speed ;
     this.draw();
   }
+
+  setSpeed(speed) {
+    if(speed != null && speed > 0) {
+      this.speed = speed;
+    }
+  }
 }
 
 class Enemy extends Character {
   constructor(ctx, x, y, w, h, imagePath) {
     super(ctx, x, y, w, h, 0, imagePath);
 
+    this.type = 'default';
+    this.frame = 0;
     this.speed = 3;
+    this.shotArray = null;
   }
 
-  set(x, y, life = 1) {
+  set(x, y, life = 1, type = 'default') {
     this.position.set(x, y);
     this.life = life;
+    this.type = type;
+    this.frame = 0;
   }
 
   update() {
     if(this.life <= 0) { return; }
-    if(this.position.y - this.height > this.ctx.canvas.height) {
-      this.life = 0;
-    }
-    this.position.x += this.vector.x * this.speed;
-    this.position.y += this.vector.y * this.speed;
 
+    // 敵のタイプによって挙動を変える
+    switch(this.type) {
+      case 'default':
+      default:
+        if(this.frame === 50) {
+          this.fire();
+        }
+        // 敵キャラクターを進行方向に沿って移動させる
+        this.position.x += this.vector.x * this.speed;
+        this.position.y += this.vector.y * this.speed;
+        // 画面外（画面下端）へ移動していたらライフを0に設定する
+        if(this.position.y - this.height > this.ctx.canvas.height) {
+          this.life = 0;
+        }
+        break;
+    }
     this.draw();
+    // 自身のフレームをインクリメントする
+    ++this.frame;
+  }
+
+  setShotArray(shotArray){
+    // 自身のプロパティに設定する
+    this.shotArray = shotArray;
+  }
+
+  // 自身から指定された方向にショットを放つ
+  fire(x = 0.0, y = 1.0) {
+    for(let i = 0; i < this.shotArray.length; ++i) {
+      // 非生存かどうかを確認する
+      if(this.shotArray[i].life <= 0) {
+        this.shotArray[i].set(this.position.x, this.position.y);
+        this.shotArray[i].setSpeed(5.0);
+        this.shotArray[i].setVector(x, y);
+        break;
+      }
+    }
   }
 }
