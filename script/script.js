@@ -72,6 +72,12 @@
       enemyArray[i] = new Enemy(ctx, 0, 0, 48, 48, './image/enemy_small.png');
       enemyArray[i].setShotArray(enemyShotArray);
     }
+    // 衝突判定を行うために対象を設定する
+    for(let i = 0; i < SHOT_MAX_COUNT; ++i) {
+      shotArray[i].setTargets(enemyArray);
+      singleShotArray[i * 2].setTargets(enemyArray);
+      singleShotArray[i * 2 + 1].setTargets(enemyArray);
+    }
 
     // シーンを初期化する
     scene = new SceneManager();

@@ -7,6 +7,12 @@ class Position {
     if(x != null) {this.x = x;}
     if(y != null) {this.y = y;}
   }
+
+  distance(target) {
+    let x = this.x - target.x;
+    let y = this.y - target.y;
+    return Math.sqrt(x * x + y * y);
+  }
 }
 
 class Character {
@@ -180,6 +186,8 @@ class Shot extends Character {
     super(ctx, x, y, w, h, 0, imagePath);
 
     this.speed = 7;
+    this.power = 1;
+    this.targetArray = [];
     this.vector = new Position(0.0, -1.0);
   }
 
@@ -190,17 +198,43 @@ class Shot extends Character {
 
   update() {
     if(this.life <= 0) {return;}
-    if(this.position.y + this.height < 0) {
+    if(
+      this.position.y + this.height < 0 ||
+      this.position.y - this.height > this.ctx.canvas.height
+    ) {
       this.life = 0;
     }
     this.position.x += this.vector.x * this.speed;
-    this.position.y += this.vector.y * this.speed ;
+    this.position.y += this.vector.y * this.speed;
+
+    this.targetArray.map((v) => {
+      if(this.life <= 0 || v.life <= 0) {return;}
+      let dist = this.position.distance(v.position);
+      if(dist <= (this.width + v.width) / 4) {
+        v.life -= this.power;
+        this.life = 0;
+      }
+    });
     this.draw();
   }
 
   setSpeed(speed) {
     if(speed != null && speed > 0) {
       this.speed = speed;
+    }
+  }
+
+  // ショットの攻撃力を設定する
+  setPower(power) {
+    if(power != null && power > 0) {
+      this.power = power;
+    }
+  }
+
+  // ショットが衝突判定を行う対象を設定する
+  setTargets(targets) {
+    if(targets != null && Array.isArray(targets) === true && targets.length > 0) {
+      this.targetArray = targets;
     }
   }
 }
