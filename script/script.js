@@ -6,6 +6,8 @@
   const ENEMY_MAX_COUNT = 10;
   // 敵キャラクターのショットの最大個数
   const ENEMY_SHOT_MAX_COUNT = 50;
+  // 爆発エフェクトの最大個数
+  const EXPLOSION_MAX_COUNT = 10;
 
   let startTime = null;
 
@@ -26,6 +28,8 @@
   let enemyShotArray = [];
   // シーンマネージャー
   let scene = null;
+  // 爆発エフェクトのインスタンスを格納する配列
+  let explosionArray = [];
 
   // キーの押下状態を調べるオブジェクト
   window.isKeyDown = {};
@@ -72,11 +76,18 @@
       enemyArray[i] = new Enemy(ctx, 0, 0, 48, 48, './image/enemy_small.png');
       enemyArray[i].setShotArray(enemyShotArray);
     }
+    // 爆発エフェクトを初期化する
+    for(let i = 0; i < EXPLOSION_MAX_COUNT; i++) {
+      explosionArray[i] = new Explosion(ctx, 50.0, 15, 20.0, 0.25);
+    }
     // 衝突判定を行うために対象を設定する
     for(let i = 0; i < SHOT_MAX_COUNT; ++i) {
       shotArray[i].setTargets(enemyArray);
       singleShotArray[i * 2].setTargets(enemyArray);
       singleShotArray[i * 2 + 1].setTargets(enemyArray);
+      shotArray[i].setExplosions(explosionArray);
+      singleShotArray[i * 2].setExplosions(explosionArray);
+      singleShotArray[i * 2 + 1].setExplosions(explosionArray);
     }
 
     // シーンを初期化する
@@ -107,6 +118,11 @@
     });
 
     enemyShotArray.map((v) => {
+      v.update();
+    });
+
+    // 爆発エフェクトの状態を更新する
+    explosionArray.map((v) => {
       v.update();
     });
 
