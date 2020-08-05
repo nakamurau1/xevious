@@ -78,7 +78,7 @@
     }
     // 爆発エフェクトを初期化する
     for(let i = 0; i < EXPLOSION_MAX_COUNT; i++) {
-      explosionArray[i] = new Explosion(ctx, 50.0, 15, 20.0, 0.25);
+      explosionArray[i] = new Explosion(ctx, 50.0, 15, 30.0, 0.25);
     }
     // 衝突判定を行うために対象を設定する
     for(let i = 0; i < SHOT_MAX_COUNT; ++i) {

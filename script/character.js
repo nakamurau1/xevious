@@ -326,18 +326,25 @@ class Explosion {
     this.count = count;
     this.startTime = 0;
     this.timeRange = timeRange;
-    this.fireSize = size;
     this.firePosition = [];
     this.fireVector = [];
+    this.fireBaseSize = size;
+    this.fireSize = [];
   }
 
   set(x, y) {
     for(let i = 0; i < this.count; i++) {
       this.firePosition[i] = new Position(x, y);
-      let r = Math.random() * Math.PI * 2.0;
-      let s = Math.sin(r);
-      let c = Math.cos(r);
-      this.fireVector[i] = new Position(c, s);
+      // ランダムに火花が進む方向（となるラジアン）を求める
+      let vr = Math.random() * Math.PI * 2.0;
+      // ラジアンを基にサインとコサインを生成し進行方向に設定する
+      let s = Math.sin(vr);
+      let c = Math.cos(vr);
+      // 進行方向ベクトルの長さをランダムに短くし移動量をランダム化する
+      let mr = Math.random();
+      this.fireVector[i] = new Position(c * mr, s * mr);
+      // 火花の大きさをランダム化する
+      this.fireSize[i] = (Math.random() * 0.5 + 0.5) * this.fireBaseSize;
     }
     this.life = true;
     this.startTime = Date.now();
@@ -348,22 +355,30 @@ class Explosion {
     this.ctx.fillStyle = this.color;
     this.ctx.globalAlpha = 0.5;
     let time = (Date.now() - this.startTime) / 1000;
-    let progress = Math.min(time / this.timeRange * 1.0);
+    let ease = this.simpleEaseIn(1.0 - Math.min(time / this.timeRange, 1.0));
+    let progress = 1.0 - ease;
 
     for(let i = 0; i < this.firePosition.length; ++i) {
       let d = this.radius * progress;
       let x = this.firePosition[i].x + this.fireVector[i].x * d;
       let y = this.firePosition[i].y + this.fireVector[i].y * d;
+      // 進捗を描かれる大きさにも反映させる
+      let s = 1.0 - progress;
+      // 矩形を描画する
       this.ctx.fillRect(
-        x - this.fireSize / 2,
-        y - this.fireSize / 2,
-        this.fireSize,
-        this.fireSize
+        x - (this.fireSize[i] * s) / 2,
+        y - (this.fireSize[i] * s) / 2,
+        this.fireSize[i] * s,
+        this.fireSize[i] * s
       )
     }
 
     if(progress >= 1.0) {
       this.life = false;
     }
+  }
+
+  simpleEaseIn(t) {
+    return t * t * t * t;
   }
 }
