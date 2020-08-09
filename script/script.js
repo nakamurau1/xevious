@@ -36,6 +36,11 @@
   // キーの押下状態を調べるオブジェクト
   window.isKeyDown = {};
 
+  // スコアを格納する
+  // このオブジェクトはプロジェクトのどこからでも参照できるように
+  // windowオブジェクトのカスタムプロパティとして設定する
+  window.gameScore = 0;
+
   window.addEventListener('load', () => {
     util = new Canvas2DUtility(document.body.querySelector('#main_canvas'));
     canvas = util.canvas;
@@ -128,6 +133,10 @@
     explosionArray.map((v) => {
       v.update();
     });
+
+    // スコアの表示
+    ctx.font = 'bold 24px monospace';
+    util.drawText(zeroPadding(gameScore, 5), 30, 50, '#111111');
 
     // 恒常ループのために描画処理を再帰呼び出しする
     requestAnimationFrame(render);
@@ -225,6 +234,8 @@
       if(restart === true) {
         // 再スタートフラグはここで最初に下げておく
         restart = false;
+        // スコアをリセットしておく
+        gameScore = 0;
         // 再度スタートするための座標等の設定
         viper.setComing(
           CANVAS_WIDTH / 2,    // 登場演出時の開始X座標
@@ -239,5 +250,15 @@
 
     // 最初のシーンにはイントロを設定する
     scene.use('intro');
+  }
+
+  // 数値の不足した桁数をゼロで埋めた文字列を返す
+  function zeroPadding(number, count) {
+    // 配列を指定の桁数分の長さで初期化する
+    let zeroArray = new Array(count);
+    // 配列の要素を'0'を挟んで連結する（=>「桁数 - 1」の0が連なる）
+    let zeroString = zeroArray.join('0') + number;
+    // 文字列の後ろから桁数分だけ文字を抜き取る
+    return zeroString.slice(-count);
   }
 })();

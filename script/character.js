@@ -219,6 +219,11 @@ class Shot extends Character {
         if(v instanceof Viper === true) {
           if(v.isComing === true) {return;}
         }
+        // もし対象が敵キャラクターの場合はスコアを加算する
+        if(v instanceof Enemy === true) {
+          // スコアシステムにも夜が、仮でここでは最大スコアを制限
+          gameScore = Math.min(gameScore + 100, 99999);
+        }
         // 対象のライフを攻撃力分減算する
         v.life -= this.power;
         if(v.life <= 0) {
