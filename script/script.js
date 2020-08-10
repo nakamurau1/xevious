@@ -10,6 +10,15 @@
   const ENEMY_SHOT_MAX_COUNT = 50;
   // 爆発エフェクトの最大個数
   const EXPLOSION_MAX_COUNT = 10;
+  // 背景を流れる星の数
+  const BACKGROUND_STAR_MAX_COUNT = 100;
+  // 背景を流れる星の最大サイズ
+  const BACKGROUND_STAR_MAX_SIZE = 3;
+  // 背景を流れる星の最大速度
+  const BACKGROUND_STAR_MAX_SPEED = 4;
+
+  // 流れる星のインスタンスを格納する配列
+  let backgroundStarArray = [];
 
   let startTime = null;
 
@@ -107,6 +116,17 @@
       singleShotArray[i * 2].setExplosions(explosionArray);
       singleShotArray[i * 2 + 1].setExplosions(explosionArray);
     }
+    // 流れる星を初期化する
+    for(let i = 0; i < BACKGROUND_STAR_MAX_COUNT; ++i) {
+      // 星の速度と大きさはランダムと最大値で決まるようにする
+      let size = 1 + Math.random() * (BACKGROUND_STAR_MAX_SIZE - 1);
+      let speed = 1 + Math.random() * (BACKGROUND_STAR_MAX_SPEED - 1);
+      backgroundStarArray[i] = new BackgroundStar(ctx, size, speed);
+      // 星の初期位置もランダムで決まるようにする
+      let x = Math.random() * CANVAS_WIDTH;
+      let y = Math.random() * CANVAS_HEIGHT;
+      backgroundStarArray[i].set(x, y);
+    }
 
     // シーンを初期化する
     scene = new SceneManager();
@@ -116,7 +136,7 @@
   function render() {
     ctx.globalAlpha = 1.0;
     // 描画前に画面全体を不透明な明るいグレーで塗りつぶす
-    util.drawRect(0, 0, canvas.width, canvas.height, '#eeeeee');
+    util.drawRect(0, 0, canvas.width, canvas.height, '#111122');
 
     let nowTime = (Date.now() - startTime) / 1000;
 
@@ -141,6 +161,10 @@
 
     // 爆発エフェクトの状態を更新する
     explosionArray.map((v) => {
+      v.update();
+    });
+
+    backgroundStarArray.map((v) => {
       v.update();
     });
 
