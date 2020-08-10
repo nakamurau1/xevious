@@ -2,8 +2,10 @@
   const CANVAS_WIDTH = 640;
   const CANVAS_HEIGHT = 480;
   const SHOT_MAX_COUNT = 10;
-  // 敵キャラクターのインスタンス数
-  const ENEMY_MAX_COUNT = 10;
+  // 敵キャラクター（小）のインスタンス数
+  const ENEMY_SMALL_MAX_COUNT = 20;
+  // 敵キャラクター（大）のインスタンス数
+  const ENEMY_LARGE_MAX_COUNT = 5;
   // 敵キャラクターのショットの最大個数
   const ENEMY_SHOT_MAX_COUNT = 50;
   // 爆発エフェクトの最大個数
@@ -66,7 +68,7 @@
       CANVAS_HEIGHT - 100
     );
     // 爆発エフェクトを初期化する
-    for(let i = 0; i < EXPLOSION_MAX_COUNT; i++) {
+    for(let i = 0; i < EXPLOSION_MAX_COUNT; ++i) {
       explosionArray[i] = new Explosion(ctx, 50.0, 15, 30.0, 0.25);
     }
     // ショットを初期化する
@@ -78,15 +80,23 @@
     viper.setShotArray(shotArray, singleShotArray);
 
     // 敵キャラクターのショットを初期化する
-    for(let i = 0; i < ENEMY_SHOT_MAX_COUNT; i++) {
+    for(let i = 0; i < ENEMY_SHOT_MAX_COUNT; ++i) {
       enemyShotArray[i] = new Shot(ctx, 0, 0, 32, 32, './image/enemy_shot.png');
       enemyShotArray[i].setTargets([viper]);
       enemyShotArray[i].setExplosions(explosionArray);
     }
-    // 敵キャラクターを初期化する
-    for(let i = 0; i < ENEMY_MAX_COUNT; i++) {
+    // 敵キャラクター（小）を初期化する
+    for(let i = 0; i < ENEMY_SMALL_MAX_COUNT; ++i) {
       enemyArray[i] = new Enemy(ctx, 0, 0, 48, 48, './image/enemy_small.png');
       enemyArray[i].setShotArray(enemyShotArray);
+      // 敵キャラクターは常に自機キャラクターを攻撃対象とする
+      enemyArray[i].setAttackTarget(viper);
+    }
+    // 敵キャラクター（大）を初期化する
+    for(let i = 0; i < ENEMY_LARGE_MAX_COUNT; ++i) {
+      enemyArray[ENEMY_SMALL_MAX_COUNT + i] = new Enemy(ctx, 0, 0, 64, 64, './image/enemy_large.png');
+      enemyArray[ENEMY_SMALL_MAX_COUNT + i].setShotArray(enemyShotArray);
+      enemyArray[ENEMY_SMALL_MAX_COUNT + i].setAttackTarget(viper);
     }
     // 衝突判定を行うために対象を設定する
     for(let i = 0; i < SHOT_MAX_COUNT; ++i) {
@@ -196,25 +206,89 @@
     // イントロシーン
     scene.add('intro', (time) => {
       if(time > 2.0) {
-        scene.use('invade');
+        scene.use('invade_default_type');
       }
     });
     // invadeシーン
-    scene.add('invade', (time) => {
-      if(scene.frame === 0) {
-        for(let i = 0; i < ENEMY_MAX_COUNT; ++i) {
+    scene.add('invade_default_type', (time) => {
+      if(scene.frame % 30 === 0) {
+        for(let i = 0; i < ENEMY_SMALL_MAX_COUNT; ++i) {
           if(enemyArray[i].life <= 0) {
             let e = enemyArray[i];
-            e.set(CANVAS_WIDTH / 2, -e.height);
-            e.setVector(0.0, 1.0);
+            // ここからさらに２パターンに分ける
+            // frameを60で割り切れるかどうかで分岐する
+            if(scene.frame % 60 === 0) {
+              // 左側面から出てくる
+              e.set(-e.width, 30, 2, 'default');
+              // 進行方向は30度の方向
+              e.setVectorFromAngle(degreesToRadians(30));
+            } else {
+              // 右側面から出てくる
+              e.set(CANVAS_WIDTH + e.width, 30, 2, 'default');
+              // 進行方向は150度の方向
+              e.setVectorFromAngle(degreesToRadians(150));
+            }
             break;
           }
         }
       }
-      if(scene.frame === 100) {
-        scene.use('invade');
+      if(scene.frame === 270) {
+        scene.use('blank');
       }
       // 自機キャラクターが被弾してライフが0になっていたらゲームオーバー
+      if(viper.life <= 0) {
+        scene.use('gameover');
+      }
+    });
+    // 間隔調整のための空白シーン
+    scene.add('blank', (time) => {
+      if(scene.frame === 150) {
+        scene.use('invade_wave_move_type');
+      }
+      if(viper.life <= 0) {
+        scene.use('gameover');
+      }
+    });
+    // invadeシーン（wave move type の敵キャラクターを生成）
+    scene.add('invade_wave_move_type', (time) => {
+      if(scene.frame % 50 === 0) {
+        for(let i = 0; i < ENEMY_SMALL_MAX_COUNT; ++i) {
+          if(enemyArray[i].life <= 0) {
+            let e = enemyArray[i];
+            if(scene.frame <= 200) {
+              // 左側を進む
+              e.set(CANVAS_WIDTH * 0.2, -e.height, 2, 'wave');
+            } else {
+              // 右側を進む
+              e.set(CANVAS_WIDTH * 0.8, -e.height, 2, 'wave');
+            }
+            break;
+          }
+        }
+      }
+      if(scene.frame === 450) {
+        scene.use('invade_large_type');
+      } 
+      if(viper.life <= 0) {
+        scene.use('gameover');
+      }
+    });
+    // invadeシーン（large type の敵キャラクターを生成）
+    scene.add('invade_large_type', (time) => {
+      if(scene.frame === 100) {
+        let i = ENEMY_SMALL_MAX_COUNT + ENEMY_LARGE_MAX_COUNT;
+        for(let j = ENEMY_SMALL_MAX_COUNT; j < i; ++j) {
+          if(enemyArray[j].life <= 0) {
+            let e = enemyArray[j];
+            // 画面中央あたりから出現しライフが多い
+            e.set(CANVAS_WIDTH / 2, -e.height, 50, 'large');
+            break;
+          }
+        }
+      }
+      if(scene.frame === 500) {
+        scene.use('intro');
+      }
       if(viper.life <= 0) {
         scene.use('gameover');
       }
@@ -260,5 +334,10 @@
     let zeroString = zeroArray.join('0') + number;
     // 文字列の後ろから桁数分だけ文字を抜き取る
     return zeroString.slice(-count);
+  }
+
+  // 度数法の角度からラジアンを生成する
+  function degreesToRadians(degrees) {
+    return degrees * Math.PI / 180;
   }
 })();

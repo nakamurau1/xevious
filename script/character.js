@@ -13,6 +13,17 @@ class Position {
     let y = this.y - target.y;
     return Math.sqrt(x * x + y * y);
   }
+
+  // ベクトルの長さを返すメソッド
+  static calcLength(x, y) {
+    return Math.sqrt(x * x + y * y);
+  }
+
+  // ベクトルを単位化した結果を返す静的メソッド
+  static calcNormal(x, y) {
+    let len = Position.calcLength(x, y);
+    return new Position(x / len, y / len);
+  }
 }
 
 class Character {
@@ -203,6 +214,8 @@ class Shot extends Character {
   update() {
     if(this.life <= 0) {return;}
     if(
+      this.position.x + this.width < 0 ||
+      this.position.x - this.width > this.ctx.canvas.width ||
       this.position.y + this.height < 0 ||
       this.position.y - this.height > this.ctx.canvas.height
     ) {
@@ -221,8 +234,13 @@ class Shot extends Character {
         }
         // もし対象が敵キャラクターの場合はスコアを加算する
         if(v instanceof Enemy === true) {
-          // スコアシステムにも夜が、仮でここでは最大スコアを制限
-          gameScore = Math.min(gameScore + 100, 99999);
+          // 敵キャラクターのタイプによってスコアが変化するようにする
+          let score = 100;
+          if(v.type === 'large') {
+            score = 1000;
+          }
+          // スコアシステムにもよるが、仮でここでは最大スコアを制限
+          gameScore = Math.min(gameScore + score, 99999);
         }
         // 対象のライフを攻撃力分減算する
         v.life -= this.power;
@@ -277,6 +295,7 @@ class Enemy extends Character {
     this.frame = 0;
     this.speed = 3;
     this.shotArray = null;
+    this.attackTarget = null;
   }
 
   set(x, y, life = 1, type = 'default') {
@@ -291,9 +310,49 @@ class Enemy extends Character {
 
     // 敵のタイプによって挙動を変える
     switch(this.type) {
+      case 'wave':
+        // 配置後のフレームが60で割り切れるときにショットを放つ
+        if(this.frame % 60 === 0) {
+          // 攻撃対象となる自機キャラクターにむかうベクトル
+          let tx = this.attackTarget.position.x - this.position.x;
+          let ty = this.attackTarget.position.y - this.position.y;
+          // ベクトルを単位化する
+          let tv = Position.calcNormal(tx, ty);
+          // 自機キャラクターにゆっくりめのショットを放つ
+          this.fire(tv.x, tv.y, 4.0);
+        }
+        // X座標はサイン波で、Y座標は一定量で変化する
+        this.position.x += Math.sin(this.frame / 10);
+        this.position.y += 2.0;
+        // 画面外（画面下端）へ移動したらライフを0（非生存の状態）にする
+        if(this.position.y - this.height > this.ctx.canvas.height) {
+          this.life = 0;
+        }
+        break;
+      case 'large':
+        // 配置後のフレームが50で割り切れるときにショットを放つ
+        if(this.frame % 50 === 0) {
+          // 45度ごとにオフセットした全方位弾を放つ
+          for(let i = 0; i < 360; i += 45) {
+            let r = i * Math.PI / 180;
+            // ラジアンからサインとコサインを求める
+            let s = Math.sin(r);
+            let c = Math.cos(r);
+            // 求めたサイン、コサインでショットを放つ
+            this.fire(c, s, 3.0);
+          }
+        }
+        // X座標はサイン波で、Y座標は一定量で変化する
+        this.position.x += Math.sin((this.frame + 90) / 50) * 2.0;
+        this.position.y += 1.0;
+        // 画面外（画面下端）へ移動していたらライフを0（非生存の状態）に設定する
+        if(this.position.y - this.height > this.ctx.canvas.height) {
+          this.life = 0;
+        }
+        break;
       case 'default':
       default:
-        if(this.frame === 50) {
+        if(this.frame === 100) {
           this.fire();
         }
         // 敵キャラクターを進行方向に沿って移動させる
@@ -315,13 +374,19 @@ class Enemy extends Character {
     this.shotArray = shotArray;
   }
 
+  // 攻撃対象を設定する
+  setAttackTarget(target) {
+    this.attackTarget = target;
+  }
+
   // 自身から指定された方向にショットを放つ
-  fire(x = 0.0, y = 1.0) {
+  fire(x = 0.0, y = 1.0, speed = 5.0) {
+    // ショットの生存を確認し非生存のものがあれば生成する
     for(let i = 0; i < this.shotArray.length; ++i) {
       // 非生存かどうかを確認する
       if(this.shotArray[i].life <= 0) {
         this.shotArray[i].set(this.position.x, this.position.y);
-        this.shotArray[i].setSpeed(5.0);
+        this.shotArray[i].setSpeed(speed);
         this.shotArray[i].setVector(x, y);
         break;
       }
