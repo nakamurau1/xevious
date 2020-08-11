@@ -305,7 +305,7 @@
           if(enemyArray[j].life <= 0) {
             let e = enemyArray[j];
             // 画面中央あたりから出現しライフが多い
-            e.set(CANVAS_WIDTH / 2, -e.height, 50, 'large');
+            e.set(CANVAS_WIDTH / 2, -e.height, 10, 'large');
             break;
           }
         }
