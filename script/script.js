@@ -170,7 +170,7 @@
 
     // スコアの表示
     ctx.font = 'bold 24px monospace';
-    util.drawText(zeroPadding(gameScore, 5), 30, 50, '#111111');
+    util.drawText(zeroPadding(gameScore, 5), 30, 50, '#FFFFFF');
 
     // 恒常ループのために描画処理を再帰呼び出しする
     requestAnimationFrame(render);
