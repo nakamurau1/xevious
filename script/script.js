@@ -8,6 +8,8 @@
   const ENEMY_LARGE_MAX_COUNT = 5;
   // 敵キャラクターのショットの最大個数
   const ENEMY_SHOT_MAX_COUNT = 50;
+  // ボスキャラクターのホーミングショットの最大個数
+  const HOMING_MAX_COUNT = 50;
   // 爆発エフェクトの最大個数
   const EXPLOSION_MAX_COUNT = 10;
   // 背景を流れる星の数
@@ -24,7 +26,6 @@
 
   // 自機のインスタンス
   let viper = null;
-
   // 自機が登場中かどうかを表すフラグ
   let isComing = false;
   // 登場演出を開始した際のタイムスタンプ
@@ -37,6 +38,10 @@
   let enemyArray = [];
   // 敵キャラクターのショットのインスタンスを格納する配列
   let enemyShotArray = [];
+  // ボスキャラクターのインスタンス
+  let boss = null;
+  // ボスキャラクターのホーミングショットのインスタンスを格納する配列
+  let homingArray = [];
   // シーンマネージャー
   let scene = null;
   // 爆発エフェクトのインスタンスを格納する配列
@@ -94,6 +99,19 @@
       enemyShotArray[i].setTargets([viper]);
       enemyShotArray[i].setExplosions(explosionArray);
     }
+    // ボスキャラクターのホーミングショットを初期化する
+    for(let i = 0; i < HOMING_MAX_COUNT; ++i) {
+      homingArray[i] = new Homing(ctx, 0, 0, 32, 32, './image/homing_shot.png');
+      homingArray[i].setTargets([viper]);
+      homingArray[i].setExplosions(explosionArray);
+    }
+
+    // ボスキャラクターを初期化する
+    boss = new Boss(ctx, 0, 0, 128, 128, './image/boss.png');
+    boss.setShotArray(enemyShotArray);
+    boss.setHomingArray(homingArray);
+    boss.setAttackTarget(viper);
+
     // 敵キャラクター（小）を初期化する
     for(let i = 0; i < ENEMY_SMALL_MAX_COUNT; ++i) {
       enemyArray[i] = new Enemy(ctx, 0, 0, 48, 48, './image/enemy_small.png');
@@ -107,11 +125,15 @@
       enemyArray[ENEMY_SMALL_MAX_COUNT + i].setShotArray(enemyShotArray);
       enemyArray[ENEMY_SMALL_MAX_COUNT + i].setAttackTarget(viper);
     }
+
+    // ボスキャラクターも衝突判定の対象とする
+    let concatEnemyArray = enemyArray.concat([boss]);
+
     // 衝突判定を行うために対象を設定する
     for(let i = 0; i < SHOT_MAX_COUNT; ++i) {
-      shotArray[i].setTargets(enemyArray);
-      singleShotArray[i * 2].setTargets(enemyArray);
-      singleShotArray[i * 2 + 1].setTargets(enemyArray);
+      shotArray[i].setTargets(concatEnemyArray);
+      singleShotArray[i * 2].setTargets(concatEnemyArray);
+      singleShotArray[i * 2 + 1].setTargets(concatEnemyArray);
       shotArray[i].setExplosions(explosionArray);
       singleShotArray[i * 2].setExplosions(explosionArray);
       singleShotArray[i * 2 + 1].setExplosions(explosionArray);
@@ -141,6 +163,7 @@
     let nowTime = (Date.now() - startTime) / 1000;
 
     viper.update();
+    boss.update();
     scene.update();
 
     shotArray.map((v) => {
@@ -156,6 +179,10 @@
     });
 
     enemyShotArray.map((v) => {
+      v.update();
+    });
+
+    homingArray.map((v) => {
       v.update();
     });
 
@@ -194,6 +221,9 @@
     enemyShotArray.map((v) => {
       ready = ready && v.ready;
     });
+    homingArray.map((v) => {
+      ready = ready && v.ready;
+    })
 
     if(ready === true) {
       eventSetting();
@@ -311,10 +341,25 @@
         }
       }
       if(scene.frame === 500) {
-        scene.use('intro');
+        scene.use('invade_boss');
       }
       if(viper.life <= 0) {
         scene.use('gameover');
+      }
+    });
+    // invadeシーン（ボスキャラクターを生成）
+    scene.add('invade_boss', (time) => {
+      // シーンのフレーム数が0となる最初のフレームでボスを登場させる
+      if(scene.frame === 0) {
+        boss.set(CANVAS_WIDTH / 2, -boss.height, 250);
+        boss.setMode('invade');
+      }
+      if(viper.life <= 0) {
+        scene.use('gameover');
+        boss.setMode('escape');
+      }
+      if(boss.life <= 0) {
+        scene.use('intro');
       }
     });
     // ゲームオーバーシーン

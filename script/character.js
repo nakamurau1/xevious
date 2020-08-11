@@ -14,6 +14,35 @@ class Position {
     return Math.sqrt(x * x + y * y);
   }
 
+  // 対象のPositionクラスのインスタンスとの外積を計算する
+  cross(target) {
+    return this.x * target.y - this.y * target.x;
+  }
+
+  // 自身を単位化したベクトルを計算して返す
+  normalize() {
+    // ベクトルの大きさを計算
+    let l = Math.sqrt(this.x * this.x + this.y * this.y);
+    if(l === 0) {
+      return new Position(0, 0);
+    }
+    // 自身のXY要素を大きさで割る
+    let x = this.x / l;
+    let y = this.y / l;
+    // 単位化されたベクトルを返す
+    return new Position(x, y);
+  }
+
+  // 指定されたラジアン分だけ自身を回転させる
+  rotate(radian) {
+    // 指定されたラジアンからサインとコサインを求める
+    let s = Math.sin(radian);
+    let c = Math.cos(radian);
+    // 2x2の回転行列と乗算し回転させる
+    this.x = this.x * c + this.y * -s;
+    this.y = this.x * s + this.y * c;
+  }
+
   // ベクトルの長さを返すメソッド
   static calcLength(x, y) {
     return Math.sqrt(x * x + y * y);
@@ -77,8 +106,8 @@ class Character {
 
     // キャラクターの幅を考慮してオフセットする量
     let offsetX = this.width / 2;
-    let offsetY = this.heigh / 2;
-    // キャラクターの幅やオフセットする様をかみして描画する
+    let offsetY = this.height / 2;
+    // キャラクターの幅やオフセットする量を加味して描画する
     this.ctx.drawImage(
       this.image,
       -offsetX,
@@ -287,6 +316,99 @@ class Shot extends Character {
   }
 }
 
+class Homing extends Shot {
+  constructor(ctx, x, y, w, h, imagePath) {
+    super(ctx, x, y, w, h, imagePath);
+    this.frame = 0;
+  }
+
+  set(x, y, speed, power) {
+    this.position.set(x, y);
+    this.life = 1;
+    this.setSpeed(speed);
+    this.setPower(power);
+    this.frame = 0;
+  }
+
+  update() {
+    if(this.life <= 0){return;}
+    // 画面外に移動したらライフを0にする 
+    if(
+      this.position.x + this.width < 0 ||
+      this.position.x - this.width > this.ctx.canvas.width ||
+      this.position.y + this.height < 0 ||
+      this.position.y - this.height > this.ctx.canvas.height
+    ) {
+      this.life = 0;
+    }
+    // ショットをホーミングさせながら移動する
+    let target = this.targetArray[0];
+    if(this.frame < 100) {
+      // ターゲットとホーミングショットの相対位置からベクトルを生成する
+      let vector = new Position(
+        target.position.x - this.position.x,
+        target.position.y - this.position.y
+      );
+      // ベクトルを単位化する
+      let normalizedVector = vector.normalize();
+      // 自分自身の進行方向ベクトルも単位化する
+      this.vector = this.vector.normalize();
+      // ２つの単位化済ベクトルから外積を計算する
+      let cross = this.vector.cross(normalizedVector);
+      // 外積の結果は以下のように説明できる
+      // 結果が0.0 => 真正面か真後の方角にいる
+      // 結果がプラス => 右半分の方向にいる
+      // 結果がマイナス => 左半分の方向にいる
+
+      // 1フレームで回転できる量は度数法で1度程度に設定する
+      let rad = Math.PI / 180.0;
+      if(cross > 0.0) {
+        // 右側にターゲットがいるので時計回りに回転させる
+        this.vector.rotate(rad);
+      } else if(cross < 0.0) {
+        // 左側にターゲットがいるので反時計回りに回転させる
+        this.vector.rotate(-rad);
+      }
+      // ※ 真正面や真後ろにいる場合はなにもしない
+    }
+    // 進行方向ベクトルを元に移動させる
+    this.position.x += this.vector.x * this.speed;
+    this.position.y += this.vector.y * this.speed;
+    // 自身の進行方向からアングルを計算し設定する
+    this.angle = Math.atan2(this.vector.y, this.vector.x);
+
+    // ショットと対象との衝突判定を行う
+    this.targetArray.map((v) => {
+      if(this.life <= 0 || v.life <= 0) {return;}
+      let dist = this.position.distance(v.position);
+      if(dist <= (this.width + v.width) / 4) {
+        if(v instanceof Viper === true){
+          if(v.isComing === true) {return;}
+        }
+        v.life -= this.power;
+        if(v.life <= 0) {
+          for(let i = 0; i < this.explosionArray.length; ++i) {
+            if(this.explosionArray[i].life !== true) {
+              this.explosionArray[i].set(v.position.x, v.position.y);
+              break;
+            }
+          }
+          if(v instanceof Enemy === true) {
+            let score = 100;
+            if(v.type === 'large') {
+              score = 1000;
+            }
+            gameScore = Math.min(gameScore + score, 99999);
+          }
+        }
+        this.life = 0;
+      }
+    });
+    this.rotationDraw();
+    ++this.frame;
+  }
+}
+
 class Enemy extends Character {
   constructor(ctx, x, y, w, h, imagePath) {
     super(ctx, x, y, w, h, 0, imagePath);
@@ -487,6 +609,111 @@ class BackgroundStar {
     // もし画面下端よりも外に出てしまっていたら上端側に戻す
     if(this.position.y + this.size > this.ctx.canvas.height) {
       this.position.y = -this.size;
+    }
+  }
+}
+
+class Boss extends Character {
+  constructor(ctx, x, y, w, h, imagePath) {
+    super(ctx, x, y, w, h, 0, imagePath);
+
+    this.mode = '';
+    this.frame = 0;
+    this.speed = 3;
+    this.shotArray = null;
+    this.homingArray = null;
+    this.attackTarget = null;
+  }
+
+  setMode(mode) {
+    this.mode = mode;
+  }
+
+  setShotArray(shotArray) {
+    this.shotArray = shotArray;
+  }
+
+  setHomingArray(homingArray) {
+    this.homingArray = homingArray;
+  }
+
+  setAttackTarget(target) {
+    this.attackTarget = target;
+  }
+
+  set(x, y, life = 1) {
+    this.position.set(x, y);
+    this.life = life;
+    this.frame = 0;
+  }
+
+  update() {
+    if(this.life <= 0) {return;}
+
+    switch(this.mode) {
+      // 出現演出時
+      case 'invade':
+        this.position.y += this.speed;
+        if(this.position.y > 100) {
+          this.position.y = 100;
+          this.mode = 'floating';
+          this.frame = 0;
+        }
+        break;
+      // 退避する演出時
+      case 'escape':
+        this.position.y -= this.speed;
+        if(this.position.y < -this.height) {
+          this.life = 0;
+        }
+        break;
+      case 'floating':
+        if(this.frame % 1000 < 500) {
+          if(this.frame % 200 > 140 && this.frame % 10 === 0) {
+            // 攻撃対象の自機キャラクターに向かうベクトル
+            let tx = this.attackTarget.position.x - this.position.x;
+            let ty = this.attackTarget.position.y - this.position.y;
+            // ベクトルを単位化する
+            let tv = Position.calcNormal(tx, ty);
+            // 自機キャラクターにややゆっくりめのショットを放つ
+            this.fire(tv.x, tv.y, 3.0);
+          }
+        } else {
+          // ホーミングショットを放つ
+          if(this.frame % 50 === 0) {
+            this.homingFire(0, 1, 3.5);
+          }
+        }
+        this.position.x += Math.cos(this.frame / 100) * 2.0;
+        break;
+      default:
+        break;
+    }
+
+    this.draw();
+    ++this.frame;
+  }
+
+  // 自身から指定された方向にショットを放つ
+  fire(x = 0.0, y = 1.0, speed = 5.0) {
+    for(let i = 0; i < this.shotArray.length; ++i) {
+      if(this.shotArray[i].life <= 0) {
+        this.shotArray[i].set(this.position.x, this.position.y);
+        this.shotArray[i].setSpeed(speed);
+        this.shotArray[i].setVector(x, y);
+        break;
+      }
+    }
+  }
+
+  homingFire(x = 0.0, y = 1.0, speed = 3.0) {
+    for(let i = 0; i < this.homingArray.length; ++i) {
+      if(this.homingArray[i].life <= 0) {
+        this.homingArray[i].set(this.position.x, this.position.y);
+        this.homingArray[i].setSpeed(speed);
+        this.homingArray[i].setVector(x, y);
+        break;
+      }
     }
   }
 }
